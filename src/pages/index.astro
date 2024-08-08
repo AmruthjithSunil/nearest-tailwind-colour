@@ -1,70 +1,90 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import Card from "../components/Card.astro";
+import { colors } from "../colors1.astro";
 ---
 
 <Layout title="Welcome to Astro.">
-    <main></main>
+    <main>
+        <input type="text" id="inputField" />
+        <div id="color"></div>
+    </main>
 </Layout>
 
-<style>
-    main {
-        margin: auto;
-        padding: 1rem;
-        width: 800px;
-        max-width: calc(100% - 2rem);
-        color: white;
-        font-size: 20px;
-        line-height: 1.6;
-    }
-    .astro-a {
-        position: absolute;
-        top: -32px;
-        left: 50%;
-        transform: translatex(-50%);
-        width: 220px;
-        height: auto;
-        z-index: -1;
-    }
-    h1 {
-        font-size: 4rem;
-        font-weight: 700;
-        line-height: 1;
-        text-align: center;
-        margin-bottom: 1em;
-    }
-    .text-gradient {
-        background-image: var(--accent-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-size: 400%;
-        background-position: 0%;
-    }
-    .instructions {
-        margin-bottom: 2rem;
-        border: 1px solid rgba(var(--accent-light), 25%);
-        background: linear-gradient(
-            rgba(var(--accent-dark), 66%),
-            rgba(var(--accent-dark), 33%)
+<style></style>
+
+<script define:vars={{ colors }}>
+    const dif = (col1, col2) => {
+        const r = col1.r - col2.r;
+        const g = col1.g - col2.g;
+        const b = col1.b - col2.b;
+        return Math.sqrt(r * r + g * g + b * b);
+    };
+    const angle = (color1, color2) => {
+        const dotProduct =
+            color1.r * color2.r + color1.g * color2.g + color1.b * color2.b;
+        const magnitude1 = Math.sqrt(
+            color1.r * color1.r + color1.g * color1.g + color1.b * color1.b
         );
-        padding: 1.5rem;
-        border-radius: 8px;
-    }
-    .instructions code {
-        font-size: 0.8em;
-        font-weight: bold;
-        background: rgba(var(--accent-light), 12%);
-        color: rgb(var(--accent-light));
-        border-radius: 4px;
-        padding: 0.3em 0.4em;
-    }
-    .instructions strong {
-        color: rgb(var(--accent-light));
-    }
-    .link-card-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
-        gap: 2rem;
-        padding: 0;
-    }
-</style>
+        const magnitude2 = Math.sqrt(
+            color2.r * color2.r + color2.g * color2.g + color2.b * color2.b
+        );
+        const cosTheta = dotProduct / (magnitude1 * magnitude2);
+        return Math.acos(cosTheta) * (180 / Math.PI);
+    };
+    const splitColor = (color) => {
+        if (typeof color !== "string") {
+            console.log("failedcolor: ", color);
+            throw new Error("Expected a string");
+        }
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        return { r, g, b };
+    };
+
+    const handleKeyDown = (event) => {
+        if (event.key === "Enter") {
+            const input = document.getElementById("inputField");
+            const color = input.value;
+            const colorBox = document.createElement("div");
+            colorBox.style.width = "50px";
+            colorBox.style.height = "50px";
+            colorBox.style.backgroundColor = color;
+            document.getElementById("color").appendChild(colorBox);
+            console.log("color: ", color);
+            console.log("typecolor: ", typeof color);
+            const colorObj = splitColor(color);
+            const colorDetails = [];
+            for (const theme in colors) {
+                const difColor = splitColor(colors[theme]);
+                const difValue = dif(colorObj, difColor);
+                const angleValue = angle(colorObj, difColor);
+                colorDetails.push({
+                    color: theme,
+                    dif: difValue,
+                    angle: angleValue,
+                });
+            }
+            // Sort the array by difference
+            const minColors = colorDetails
+                .sort((a, b) => a.dif - b.dif)
+                .slice(0, 5);
+            for (const color of minColors) {
+                const div = document.createElement("div");
+                const colorBox = document.createElement("div");
+                colorBox.style.width = "50px";
+                colorBox.style.height = "50px";
+                colorBox.style.backgroundColor = colors[color.color];
+                div.innerText =
+                    color.color + " " + color.dif + " " + color.angle;
+                div.appendChild(colorBox);
+                div.style.color = "white";
+                document.getElementById("color").appendChild(div);
+            }
+            // console.log("colorDetails: ", colorDetails);
+        }
+    };
+    document
+        .getElementById("inputField")
+        .addEventListener("keydown", handleKeyDown);
+</script>
