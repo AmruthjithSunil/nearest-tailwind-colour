@@ -17,7 +17,20 @@ import { colors } from "../colors1.astro";
         const r = col1.r - col2.r;
         const g = col1.g - col2.g;
         const b = col1.b - col2.b;
-        return Math.sqrt(r * r + g * g + b * b);
+        return Math.round(Math.sqrt(r * r + g * g + b * b));
+    };
+    const perceivedDif = (color1, color2) => {
+        const rmean = (color1.r + color2.r) / 2;
+        const r = color1.r - color2.r;
+        const g = color1.g - color2.g;
+        const b = color1.b - color2.b;
+        return Math.round(
+            Math.sqrt(
+                (2 + rmean / 256) * r * r +
+                    4 * g * g +
+                    (2 + (255 - rmean) / 256) * b * b
+            )
+        );
     };
     const angle = (color1, color2) => {
         const dotProduct =
@@ -29,7 +42,7 @@ import { colors } from "../colors1.astro";
             color2.r * color2.r + color2.g * color2.g + color2.b * color2.b
         );
         const cosTheta = dotProduct / (magnitude1 * magnitude2);
-        return Math.acos(cosTheta) * (180 / Math.PI);
+        return Math.round(Math.acos(cosTheta) * (180 / Math.PI) * 100) / 100;
     };
     const splitColor = (color) => {
         if (typeof color !== "string") {
@@ -51,23 +64,23 @@ import { colors } from "../colors1.astro";
             colorBox.style.height = "50px";
             colorBox.style.backgroundColor = color;
             document.getElementById("color").appendChild(colorBox);
-            console.log("color: ", color);
-            console.log("typecolor: ", typeof color);
             const colorObj = splitColor(color);
             const colorDetails = [];
             for (const theme in colors) {
                 const difColor = splitColor(colors[theme]);
+                const perceived = perceivedDif(colorObj, difColor);
                 const difValue = dif(colorObj, difColor);
                 const angleValue = angle(colorObj, difColor);
                 colorDetails.push({
                     color: theme,
                     dif: difValue,
                     angle: angleValue,
+                    perceived: perceived,
                 });
             }
             // Sort the array by difference
             const minColors = colorDetails
-                .sort((a, b) => a.dif - b.dif)
+                .sort((a, b) => a.perceived - b.perceived)
                 .slice(0, 5);
             for (const color of minColors) {
                 const div = document.createElement("div");
@@ -76,7 +89,13 @@ import { colors } from "../colors1.astro";
                 colorBox.style.height = "50px";
                 colorBox.style.backgroundColor = colors[color.color];
                 div.innerText =
-                    color.color + " " + color.dif + " " + color.angle;
+                    color.color +
+                    " " +
+                    color.perceived +
+                    " " +
+                    color.dif +
+                    " " +
+                    color.angle;
                 div.appendChild(colorBox);
                 div.style.color = "white";
                 document.getElementById("color").appendChild(div);
